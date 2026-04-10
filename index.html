@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>簿記クエ：タスク・時間 分離版</title>
+    <style>
+        :root { 
+            --main: #00B1D2; 
+            --bg: #F0F4F8; 
+            --card: #FFFFFF; 
+            --text: #333333;
+            --sub-text: #8899A6;
+            --accent: #FF8C00; 
+            --green: #23D084;
+            --tomato: #FF6347;
+            --purple: #9D72FF;
+        }
+        body { 
+            background: var(--bg); color: var(--text); font-family: 'Helvetica Neue', Arial, sans-serif; 
+            margin: 0; padding: 15px; text-align: center; 
+            max-width: 600px; margin-left: auto; margin-right: auto;
+        }
+        .header-bar {
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;
+        }
+        .slot-btn {
+            background: none; border: 1px solid var(--sub-text); color: var(--sub-text); 
+            padding: 5px 10px; border-radius: 20px; font-size: 0.8em; cursor: pointer;
+        }
+        
+        .card { 
+            background: var(--card); border-radius: 16px; padding: 20px; margin-bottom: 15px; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05); text-align: center;
+        }
+        
+        /* ステータス */
+        #user-display { font-size: 1.1em; color: var(--text); font-weight: bold; }
+        .streak-text { color: var(--accent); font-weight: bold; font-size: 0.9em; margin-bottom: 10px; }
+        .char { font-size: 70px; margin: 5px 0; display: block; }
+        .lv-text { font-size: 2.5em; font-weight: bold; color: var(--main); }
+        .rank-text { color: var(--sub-text); font-weight: bold; font-size: 1em; letter-spacing: 1px; }
+        
+        /* 経験値バー */
+        .exp-bar-bg { 
+            background: #E1E8ED; height: 16px; border-radius: 8px; overflow: hidden; margin: 15px 0; 
+        }
+        .exp-bar-fill { 
+            height: 100%; background: linear-gradient(90deg, #00B1D2, #23D084); 
+            width: 0%; transition: width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1); 
+        }
+        
+        /* 操作系 */
+        .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .btn-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 15px; }
+        
+        button { 
+            background: var(--bg); border: 1px solid #E1E8ED; color: var(--text); 
+            padding: 12px; border-radius: 12px; cursor: pointer; font-weight: bold; touch-action: manipulation; 
+            transition: all 0.1s; font-size: 0.9em;
+        }
+        button:active { transform: scale(0.95); background: #E1E8ED; }
+        .btn-main { background: var(--main); color: white; border: none; box-shadow: 0 4px 10px rgba(0, 177, 210, 0.3); }
+        .btn-task { background: var(--purple); color: white; border: none; box-shadow: 0 4px 10px rgba(157, 114, 255, 0.3); }
+        
+        .input-group {
+            display: flex; flex: 1; border: 1px solid #E1E8ED; border-radius: 10px; overflow: hidden; background: #F8FAFC;
+        }
+        .input-group input { 
+            flex: 1; padding: 12px; background: transparent; color: var(--text); 
+            border: none; font-size: 16px; text-align: center; outline: none; width: 50%;
+        }
+        .input-group input:first-child { border-right: 1px solid #E1E8ED; }
+
+        /* グラフエリア */
+        .graph-label { font-size: 0.8em; color: var(--sub-text); font-weight: bold; margin-bottom: 10px; text-align: left; }
+        .graph-area { 
+            display: flex; align-items: flex-end; justify-content: space-around; 
+            height: 120px; margin-top: 5px; padding-bottom: 5px; border-bottom: 2px solid #E1E8ED; 
+        }
+        .bar-wrap { display: flex; flex-direction: column; align-items: center; width: 12%; height: 100%; justify-content: flex-end; }
+        .bar { width: 80%; border-radius: 4px 4px 0 0; height: 0%; transition: height 0.8s ease-out; }
+        .bar-time { background: var(--main); }
+        .bar-task { background: var(--purple); }
+        .bar-val { font-size: 9px; color: var(--text); margin-bottom: 4px; line-height: 1.1; font-weight: bold; }
+        .bar-date { font-size: 9px; color: var(--sub-text); margin-top: 8px; white-space: nowrap; }
+
+        .overlay { 
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.6); z-index: 1000; flex-direction: column; justify-content: center; align-items: center; 
+            backdrop-filter: blur(3px);
+        }
+        .modal-card { background: var(--card); padding: 30px; border-radius: 20px; width: 85%; max-width: 400px; box-sizing: border-box; text-align: center; }
+        .slot-item { padding: 15px; margin-bottom: 10px; border: 2px solid #E1E8ED; border-radius: 12px; cursor: pointer; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div id="slot-modal" class="overlay" style="display: flex;">
+    <div class="modal-card">
+        <h2 style="color:var(--main); margin-top:0;">データを選択</h2>
+        <div id="slot-list"></div>
+    </div>
+</div>
+
+<div id="name-modal" class="overlay">
+    <div class="modal-card">
+        <h2 style="color:var(--main); margin-top:0;">新規登録</h2>
+        <input type="text" id="user-name-input" placeholder="名前" style="width:100%; padding:12px; margin-bottom:20px; box-sizing: border-box; border-radius:10px; border:1px solid #E1E8ED;">
+        <button class="btn-main" onclick="registerName()" style="width:100%;">開始</button>
+    </div>
+</div>
+
+<div id="lv-modal" class="overlay">
+    <div class="modal-card">
+        <h1 style="color:var(--main); font-size:2.5em; margin:0;">JOB CHANGE!</h1>
+        <div id="modal-job" style="font-size:70px; margin: 20px 0;"></div>
+        <div id="modal-job-name" style="font-size:1.5em; font-weight:bold;"></div>
+        <button class="btn-main" onclick="document.getElementById('lv-modal').style.display='none'" style="margin-top:30px; width:100%;">閉じる</button>
+    </div>
+</div>
+
+<div class="header-bar">
+    <div id="user-display">---</div>
+    <button class="slot-btn" onclick="openSlotMenu()">🔁 データ切替</button>
+</div>
+
+<div class="card">
+    <div id="display-streak" class="streak-text">🔥 0日連続！</div>
+    <span id="display-char" class="char">👤</span>
+    <div id="display-rank" class="rank-text">---</div>
+    <div class="lv-text">Lv.<span id="display-level">1</span></div>
+    <div class="exp-bar-bg"><div id="display-bar" class="exp-bar-fill"></div></div>
+    <div style="font-size: 0.85em; color: var(--sub-text); font-weight:bold;">あと <span id="display-next" style="color:var(--main);">--</span> XP</div>
+</div>
+
+<div class="card">
+    <h3 style="font-size:0.9em; color:var(--purple); text-align:left; margin-top:0;">✅ タスクを完了する</h3>
+    <div class="btn-grid-3">
+        <button class="btn-task" onclick="completeTask('仕訳30問', 15)">仕訳30問<br><small>15XP</small></button>
+        <button class="btn-task" onclick="completeTask('問題集1章', 30)">問題集1章<br><small>30XP</small></button>
+        <button class="btn-task" onclick="completeTask('過去問', 100)">過去問<br><small>100XP</small></button>
+    </div>
+</div>
+
+<div class="card" style="border: 2px solid var(--tomato);">
+    <h3 style="font-size:0.9em; color:var(--tomato); text-align:left; margin-top:0;">🍅 ポモドーロタイマー</h3>
+    <div id="pomodoro-display" style="font-size: 2.5em; font-weight: bold; margin: 5px 0;">25:00</div>
+    <div id="pomodoro-status" style="font-size: 0.8em; color: var(--sub-text); margin-bottom: 10px;">勉強モード (+30XP)</div>
+    <div style="display:flex; gap:10px; justify-content:center;">
+        <button class="btn-main" id="btn-pomo-start" style="background:var(--tomato); flex:1;" onclick="togglePomodoro()">スタート</button>
+        <button onclick="resetPomodoro()">リセット</button>
+    </div>
+</div>
+
+<div class="card">
+    <h3 style="font-size:0.9em; color:var(--sub-text); text-align:left; margin-top:0;">⏲️ 手動時間記録</h3>
+    <div style="display:flex; gap:10px;">
+        <div class="input-group">
+            <input type="number" id="input-hours" placeholder="時" min="0">
+            <input type="number" id="input-minutes" placeholder="分" min="0" max="59">
+        </div>
+        <button class="btn-main" onclick="recordManualTime()">記録</button>
+    </div>
+</div>
+
+<div class="card">
+    <div class="graph-label">📅 勉強時間の推移 (分)</div>
+    <div id="time-graph-container" class="graph-area"></div>
+    
+    <div style="margin-top: 25px;" class="graph-label">📊 タスク完了数の推移 (個)</div>
+    <div id="task-graph-container" class="graph-area"></div>
+    
+    <div id="total-stats" style="margin-top:20px; font-size:0.85em; color:var(--sub-text); font-weight:bold;">
+        累計: <span id="sum-time" style="color:var(--main);">0分</span> / <span id="sum-tasks" style="color:var(--purple);">0タスク</span>
+    </div>
+</div>
+
+<script>
+    const JOBS = [
+        { lv: 1,  n: "簿記の赤ちゃん", i: "👶" }, { lv: 3,  n: "簿記の初心者",   i: "🧒" },
+        { lv: 7,  n: "簿記学徒",       i: "🧑‍🎓" }, { lv: 15, n: "見習い経理",     i: "🧑‍💻" },
+        { lv: 30, n: "敏腕経理マン",   i: "👔" }, { lv: 50, n: "決算の勇者",     i: "⚔️" },
+        { lv: 80, n: "経理の賢者",     i: "🧙" }, { lv: 120,n: "伝説の会計王",   i: "👑" }
+    ];
+
+    let appState = JSON.parse(localStorage.getItem('boki_v8_split')) || {
+        slots: [
+            { id: 0, name: "", xp: 0, timeLogs: {}, taskLogs: {}, streak: 0, lastDate: "" },
+            { id: 1, name: "", xp: 0, timeLogs: {}, taskLogs: {}, streak: 0, lastDate: "" },
+            { id: 2, name: "", xp: 0, timeLogs: {}, taskLogs: {}, streak: 0, lastDate: "" }
+        ],
+        currentSlot: -1
+    };
+
+    let currentUser = null;
+    let pomoInterval = null;
+    let pomoTime = 25 * 60; 
+    let pomoMode = 'study'; 
+    let isPomoRunning = false;
+
+    function getTodayString() {
+        const d = new Date();
+        return `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()}`;
+    }
+
+    function getLevelInfo(xp) {
+        let lv = 1, needed = 10, tempXP = xp;
+        while (tempXP >= needed) {
+            tempXP -= needed;
+            lv++;
+            needed = 10 + (lv * 5); 
+        }
+        return { lv, currentXP: tempXP, nextXP: needed };
+    }
+
+    /* ==== 記録アクション ==== */
+    function addXP(amount) {
+        const oldLv = getLevelInfo(currentUser.xp).lv;
+        currentUser.xp += amount;
+        
+        const today = getTodayString();
+        if (currentUser.lastDate !== today) {
+            currentUser.streak = (currentUser.lastDate === getYesterdayString()) ? currentUser.streak + 1 : 1;
+            currentUser.lastDate = today;
+        }
+        
+        saveData();
+        const newLv = getLevelInfo(currentUser.xp).lv;
+        if (newLv > oldLv) {
+            const job = JOBS.find(j => newLv >= j.lv) || JOBS[0];
+            document.getElementById('modal-job').innerText = job.i;
+            document.getElementById('modal-job-name').innerText = job.n;
+            document.getElementById('lv-modal').style.display = 'flex';
+        }
+        refreshUI();
+    }
+
+    function completeTask(name, xp) {
+        const today = getTodayString();
+        currentUser.taskLogs[today] = (currentUser.taskLogs[today] || 0) + 1;
+        addXP(xp);
+        alert(`✅ タスク「${name}」完了！ ${xp}XP 獲得！`);
+    }
+
+    function recordTime(minutes) {
+        const today = getTodayString();
+        currentUser.timeLogs[today] = (currentUser.timeLogs[today] || 0) + minutes;
+        addXP(minutes);
+    }
+
+    function recordManualTime() {
+        const h = parseInt(document.getElementById('input-hours').value) || 0;
+        const m = parseInt(document.getElementById('input-minutes').value) || 0;
+        const total = (h * 60) + m;
+        if (total > 0) {
+            recordTime(total);
+            document.getElementById('input-hours').value = '';
+            document.getElementById('input-minutes').value = '';
+            alert(`⏲️ ${total}分の学習を記録しました！`);
+        }
+    }
+
+    /* ==== ポモドーロタイマー ==== */
+    function togglePomodoro() {
+        const btn = document.getElementById('btn-pomo-start');
+        if (isPomoRunning) {
+            clearInterval(pomoInterval);
+            isPomoRunning = false;
+            btn.innerText = "再開";
+        } else {
+            isPomoRunning = true;
+            btn.innerText = "停止";
+            pomoInterval = setInterval(() => {
+                pomoTime--;
+                if (pomoTime <= 0) {
+                    clearInterval(pomoInterval);
+                    isPomoRunning = false;
+                    if (pomoMode === 'study') {
+                        recordTime(30);
+                        alert("🍅 25分完了！30XP獲得！次は6分休憩です。");
+                        pomoMode = 'break'; pomoTime = 6 * 60;
+                    } else {
+                        alert("☕ 休憩終了！学習を再開しましょう！");
+                        pomoMode = 'study'; pomoTime = 25 * 60;
+                    }
+                    resetPomodoroUI();
+                }
+                updatePomoDisplay();
+            }, 1000);
+        }
+    }
+
+    function updatePomoDisplay() {
+        const m = Math.floor(pomoTime / 60);
+        const s = pomoTime % 60;
+        document.getElementById('pomodoro-display').innerText = `${m}:${s.toString().padStart(2, '0')}`;
+    }
+
+    function resetPomodoro() {
+        clearInterval(pomoInterval);
+        isPomoRunning = false;
+        pomoMode = 'study'; pomoTime = 25 * 60;
+        resetPomodoroUI();
+        updatePomoDisplay();
+    }
+
+    function resetPomodoroUI() {
+        const btn = document.getElementById('btn-pomo-start');
+        btn.innerText = "スタート";
+        document.getElementById('pomodoro-status').innerText = pomoMode === 'study' ? "勉強モード (+30XP)" : "休憩中...";
+    }
+
+    /* ==== UI描画 ==== */
+    function refreshUI() {
+        if (!currentUser) return;
+        const info = getLevelInfo(currentUser.xp);
+        const job = JOBS.slice().reverse().find(j => info.lv >= j.lv) || JOBS[0];
+        
+        document.getElementById('user-display').innerText = currentUser.name;
+        document.getElementById('display-streak').innerText = `🔥 ${currentUser.streak}日連続！`;
+        document.getElementById('display-level').innerText = info.lv;
+        document.getElementById('display-rank').innerText = job.n;
+        document.getElementById('display-char').innerText = job.i;
+        document.getElementById('display-next').innerText = info.nextXP - info.currentXP;
+        document.getElementById('display-bar').style.width = (info.currentXP / info.nextXP * 100) + "%";
+
+        const totalTime = Object.values(currentUser.timeLogs).reduce((a, b) => a + b, 0);
+        const totalTasks = Object.values(currentUser.taskLogs).reduce((a, b) => a + b, 0);
+        document.getElementById('sum-time').innerText = totalTime + "分";
+        document.getElementById('sum-tasks').innerText = totalTasks + "個";
+
+        renderGraph('time-graph-container', currentUser.timeLogs, 'bar-time', '分');
+        renderGraph('task-graph-container', currentUser.taskLogs, 'bar-task', '個');
+    }
+
+    function renderGraph(containerId, logs, barClass, unit) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = '';
+        let entries = [];
+        for (let i = 6; i >= 0; i--) {
+            const d = new Date(); d.setDate(d.getDate() - i);
+            const key = `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()}`;
+            entries.push({ label: `${d.getMonth()+1}/${d.getDate()}`, val: logs[key] || 0 });
+        }
+        const maxVal = Math.max(...entries.map(e => e.val), 1);
+        entries.forEach(e => {
+            const h = (e.val / maxVal) * 100;
+            const wrap = document.createElement('div');
+            wrap.className = 'bar-wrap';
+            wrap.innerHTML = `<div class="bar-val">${e.val}${unit}</div><div class="bar ${barClass}" style="height:${h}%"></div><div class="bar-date">${e.label}</div>`;
+            container.appendChild(wrap);
+        });
+    }
+
+    /* ==== システム ==== */
+    function getYesterdayString() {
+        const d = new Date(); d.setDate(d.getDate() - 1);
+        return `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()}`;
+    }
+
+    function saveData() { localStorage.setItem('boki_v8_split', JSON.stringify(appState)); }
+
+    function openSlotMenu() {
+        const list = document.getElementById('slot-list');
+        list.innerHTML = '';
+        appState.slots.forEach((slot, idx) => {
+            const div = document.createElement('div');
+            div.className = 'slot-item';
+            div.style.color = slot.name ? 'var(--text)' : 'var(--sub-text)';
+            div.innerText = slot.name ? `DATA ${idx+1}: ${slot.name} (Lv.${getLevelInfo(slot.xp).lv})` : `DATA ${idx+1}: 空き`;
+            div.onclick = () => selectSlot(idx);
+            list.appendChild(div);
+        });
+        document.getElementById('slot-modal').style.display = 'flex';
+    }
+
+    function selectSlot(idx) {
+        appState.currentSlot = idx;
+        currentUser = appState.slots[idx];
+        document.getElementById('slot-modal').style.display = 'none';
+        if (!currentUser.name) document.getElementById('name-modal').style.display = 'flex';
+        else refreshUI();
+    }
+
+    function registerName() {
+        const name = document.getElementById('user-name-input').value;
+        if (name) {
+            currentUser.name = name;
+            document.getElementById('name-modal').style.display = 'none';
+            saveData(); refreshUI();
+        }
+    }
+
+    window.onload = () => {
+        if (appState.currentSlot >= 0 && appState.slots[appState.currentSlot].name) selectSlot(appState.currentSlot);
+        else openSlotMenu();
+    };
+</script>
+</body>
+</html>
