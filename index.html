@@ -3,586 +3,703 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>簿記クエ：サクサク成長版 (UI改善＆実績追加版)</title>
+    <title>簿記クエ：アルティメット版</title>
     <style>
         :root { 
-            --main: #00B1D2; --bg: #F0F4F8; --card: #FFFFFF; 
-            --text: #333333; --sub-text: #8899A6; --accent: #FF8C00; 
-            --green: #23D084; --tomato: #FF6347; --gold: #FFD700;
+            --study: #0088FF; --task: #00C853; --pomo: #E74C3C; --bg: #F4F7F9; 
+            --card: #FFFFFF; --text: #2C3E50; --sub: #7F8C8D; --gold: #F1C40F;
         }
         body { 
             background: var(--bg); color: var(--text); font-family: 'Helvetica Neue', Arial, sans-serif; 
             margin: 0; padding: 20px; text-align: center; 
-            max-width: 700px; margin-left: auto; margin-right: auto;
-            transition: background 0.5s;
+            max-width: 800px; margin-left: auto; margin-right: auto; line-height: 1.6;
         }
-        .header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .coin-display { font-weight: bold; color: var(--gold); background: #fff8e1; padding: 8px 16px; border-radius: 20px; border: 1px solid #ffe082; font-size: 1.1em;}
-        .slot-btn { background: none; border: 1px solid var(--sub-text); color: var(--sub-text); padding: 8px 15px; border-radius: 20px; font-size: 0.9em; cursor: pointer; font-weight: bold;}
         
-        /* UIをひろびろと（padding, margin拡大） */
         .card { 
-            background: var(--card); border-radius: 24px; padding: 30px; margin-bottom: 25px; 
-            box-shadow: 0 6px 16px rgba(0,0,0,0.06); text-align: center; position: relative;
+            background: var(--card); border-radius: 20px; padding: 25px; margin-bottom: 25px; 
+            box-shadow: 0 8px 24px rgba(0,0,0,0.05); text-align: left; position: relative;
         }
+        .card-center { text-align: center; }
         
-        /* ステータス */
-        #user-display { font-size: 1.3em; color: var(--text); font-weight: bold; }
-        .streak-text { color: var(--accent); font-weight: bold; font-size: 1.1em; margin-bottom: 10px; }
-        .custom-title { font-size: 0.9em; color: var(--sub-text); border: 1px solid var(--sub-text); border-radius: 6px; padding: 4px 10px; display: inline-block; margin-bottom: 15px; }
+        h2, h3 { margin-top: 0; color: var(--text); }
+        .flex-between { display: flex; justify-content: space-between; align-items: center; }
+        
+        /* ヘッダー・ステータス */
+        .header-bar { margin-bottom: 20px; }
+        .coin-box { font-weight: bold; color: #D4AC0D; background: #FEF9E7; padding: 10px 20px; border-radius: 30px; border: 2px solid #F9E79F; }
         .char { font-size: 80px; margin: 10px 0; display: block; }
-        .lv-text { font-size: 3em; font-weight: bold; color: var(--main); margin: 10px 0;}
-        .rank-text { color: var(--sub-text); font-weight: bold; font-size: 1.2em; letter-spacing: 1px; }
+        .lv-text { font-size: 2.2em; font-weight: bold; color: var(--study); margin-bottom: 10px;}
         
-        /* 経験値バー */
-        .exp-bar-bg { background: #E1E8ED; height: 20px; border-radius: 10px; overflow: hidden; margin: 20px 0; }
-        .exp-bar-fill { height: 100%; background: linear-gradient(90deg, #00B1D2, #23D084); width: 0%; transition: width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1); }
-        
-        /* 操作系 */
-        .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
-        button { 
-            background: var(--bg); border: 1px solid #E1E8ED; color: var(--text); 
-            padding: 15px; border-radius: 14px; cursor: pointer; font-weight: bold; touch-action: manipulation; transition: all 0.1s; font-size: 1em;
+        /* デイリークエスト */
+        .daily-list { background: #F8F9F9; padding: 15px; border-radius: 12px; margin-bottom: 15px; }
+        .daily-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed #ccc; font-size: 0.9em; }
+        .daily-item:last-child { border-bottom: none; }
+        .daily-btn { background: var(--gold); color: #fff; border: none; border-radius: 8px; padding: 4px 10px; cursor: pointer; font-size: 0.8em; font-weight: bold;}
+        .daily-btn:disabled { background: #ccc; cursor: not-allowed; }
+
+        /* 入力フォーム */
+        .input-wrap { display: flex; gap: 10px; align-items: center; margin-top: 10px; flex-wrap: wrap;}
+        input[type="number"], input[type="text"], select { 
+            flex: 1; padding: 12px; border: 2px solid #E0E6ED; border-radius: 10px; font-size: 15px; outline: none; min-width: 60px;
         }
-        button:active { transform: scale(0.95); background: #E1E8ED; }
-        .btn-main { background: var(--main); color: white; border: none; box-shadow: 0 4px 10px rgba(0, 177, 210, 0.3); }
-        .btn-main:active { background: #0098B5; }
-        .btn-gacha { background: linear-gradient(45deg, #FFD700, #FFA500); color: white; border: none; box-shadow: 0 4px 10px rgba(255, 165, 0, 0.4); text-shadow: 1px 1px 2px rgba(0,0,0,0.2); }
-        
-        .input-group { display: flex; flex: 1; border: 1px solid #E1E8ED; border-radius: 12px; overflow: hidden; background: #fff; }
-        .input-group input { flex: 1; padding: 15px; background: transparent; color: var(--text); border: none; font-size: 16px; text-align: center; outline: none; width: 50%; }
-        .input-group input:first-child { border-right: 1px solid #E1E8ED; }
-        .input-group input:focus { background: #F0F4F8; }
-        .input-label { font-size: 0.9em; font-weight: bold; color: var(--sub-text); margin-bottom: 8px; text-align: left; }
-        .input-box-wrap { background: #F8FAFC; padding: 20px; border-radius: 16px; border: 1px solid #E1E8ED; margin-bottom: 15px; }
-
-        /* グラフエリア復活 */
-        .tab-btn { background: none; border: none; color: var(--sub-text); padding: 8px 20px; border-radius: 20px; margin: 0 5px 20px; font-size: 1em; font-weight: bold; cursor:pointer;}
-        .tab-btn.active { background: var(--main); color: white; }
-        .graph-area { display: flex; align-items: flex-end; justify-content: space-around; height: 180px; margin-top: 15px; padding-bottom: 5px; border-bottom: 2px solid #E1E8ED; }
-        .bar-wrap { display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end; }
-        .bar { background: var(--main); border-radius: 6px 6px 0 0; height: 0%; transition: height 0.8s ease-out; }
-        .bar-val { font-size: 11px; color: var(--text); margin-bottom: 4px; line-height: 1.1; font-weight: bold; }
-        .bar-date { font-size: 11px; color: var(--sub-text); margin-top: 8px; white-space: nowrap; }
-
-        /* ポモドーロフルスクリーン用 */
-        .pomo-fullscreen {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: var(--tomato) !important; color: white !important; z-index: 9999;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            box-sizing: border-box; border-radius: 0 !important; border: none !important;
+        button.action-btn { 
+            border: none; padding: 12px 20px; border-radius: 10px; cursor: pointer; font-weight: bold; color: white; transition: 0.2s; white-space: nowrap;
         }
-        .pomo-fullscreen h3, .pomo-fullscreen #pomodoro-status { color: white !important; }
-        .pomo-fullscreen #pomodoro-display { font-size: 6em !important; color: white !important; }
-        .pomo-fullscreen button { border: 2px solid white; color: white; }
-        .combo-text { font-size: 1.2em; color: var(--gold); font-weight: bold; animation: pulse 1s infinite; margin-bottom: 10px; }
-
-        /* モーダル & 演出 */
-        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 10000; flex-direction: column; justify-content: center; align-items: center; backdrop-filter: blur(3px); }
-        .modal-card { background: var(--card); padding: 40px 30px; border-radius: 24px; width: 90%; max-width: 450px; box-sizing: border-box; text-align: center; position: relative; overflow: hidden; }
+        button.action-btn:active { transform: scale(0.95); }
         
-        @keyframes levelUpPop { 0% { transform: scale(0.8); opacity: 0; } 50% { transform: scale(1.1); } 100% { transform: scale(1); opacity: 1; } }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
-        .lv-up-anim { animation: levelUpPop 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) both; }
-        .sparkle { position: absolute; font-size: 24px; animation: pulse 1s infinite; }
+        /* グラフエリア */
+        .tab-group { display: flex; gap: 5px; margin-bottom: 15px; background: #ECF0F1; padding: 5px; border-radius: 12px; }
+        .tab-btn { flex: 1; padding: 8px; border-radius: 8px; background: none; color: var(--sub); cursor: pointer; font-weight: bold; border: none; font-size: 0.85em; }
+        .tab-btn.active { background: white; color: var(--text); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        
+        .graph-wrapper { display: flex; height: 160px; margin-bottom: 25px; margin-top: 15px; margin-left: 40px; }
+        .graph-container { flex: 1; display: flex; align-items: flex-end; justify-content: space-around; border-bottom: 1px solid #E0E6ED; padding-left: 5px; position: relative; }
+        .bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; z-index: 1; }
+        .bar { width: 60%; border-radius: 4px 4px 0 0; transition: height 0.5s ease; min-height: 2px;}
+        .bar-date { font-size: 9px; color: var(--sub); margin-top: 5px; }
+        
+        /* フレンドリスト */
+        .friend-list { max-height: 150px; overflow-y: auto; background: #F8F9F9; border-radius: 10px; padding: 10px; margin-top: 10px;}
+        .friend-item { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #E0E6ED; font-size: 0.9em;}
+        .friend-item:last-child { border-bottom: none; }
 
-        /* リスト類 */
-        .list-item { padding: 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; font-size: 1em; text-align: left;}
-        .badge { background: var(--gold); color: white; padding: 4px 10px; border-radius: 12px; font-size: 0.85em; font-weight: bold; white-space: nowrap; margin-left: 10px;}
+        /* ポモドーロタイマー */
+        #pomo-screen { 
+            display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; 
+            background: linear-gradient(135deg, #FF416C, #FF4B2B); color: white; 
+            z-index: 9999; flex-direction: column; justify-content: center; align-items: center;
+        }
+        #pomo-time { font-size: 6rem; font-weight: bold; margin: 0; text-shadow: 2px 2px 10px rgba(0,0,0,0.3); }
+        #pomo-status { font-size: 2rem; margin-bottom: 20px; }
+        #pomo-combo-disp { font-size: 1.2rem; margin-bottom: 40px; font-weight: bold; color: #FFE000; }
+        .pomo-cancel { background: rgba(255,255,255,0.2); border: 2px solid white; color: white; padding: 15px 40px; font-size: 1.2rem; border-radius: 30px; cursor: pointer; }
+
+        /* モーダル */
+        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(4px); }
+        .modal { background: white; width: 95%; max-width: 500px; border-radius: 20px; padding: 25px; max-height: 80vh; overflow-y: auto; text-align: left; }
     </style>
 </head>
 <body>
 
-<div class="header-bar">
-    <div id="user-display">---</div>
-    <div class="coin-display">🪙 <span id="display-coins">0</span></div>
-    <button class="slot-btn" onclick="openSlotMenu()">🔁 データ切替</button>
+<div class="header-bar flex-between">
+    <div style="text-align:left;">
+        <div style="font-weight:bold; font-size:1.2em;" id="display-name">---</div>
+        <div style="font-size:0.8em; color:var(--sub);" id="display-id">ID: ---</div>
+    </div>
+    <div class="coin-box">🪙 <span id="display-coins">0</span></div>
 </div>
 
-<div class="card" id="profile-card">
-    <div id="display-streak" class="streak-text">🔥 0日連続学習中！</div>
-    <div id="display-title" class="custom-title">称号なし</div>
+<div class="card card-center">
+    <div style="font-size:0.9em; color:var(--sub); border: 1px solid #ccc; padding:4px 12px; border-radius:20px; display:inline-block;" id="display-title">称号なし</div>
     <span id="display-char" class="char">👤</span>
-    <div id="display-rank" class="rank-text">---</div>
     <div class="lv-text">Lv.<span id="display-level">1</span></div>
-    
-    <div class="exp-bar-bg"><div id="display-bar" class="exp-bar-fill"></div></div>
-    <div style="font-size: 0.9em; color: var(--sub-text); font-weight:bold;">
-        次まで あと <span id="display-next" style="color:var(--main); font-size: 1.2em;">--</span> XP
+    <div id="display-rank" style="color:var(--sub); font-weight:bold;">---</div>
+</div>
+
+<div class="card">
+    <h3>📜 今日のデイリークエスト</h3>
+    <div class="daily-list" id="daily-list"></div>
+</div>
+
+<div class="card card-center" style="background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);">
+    <h3 style="color: #D63031; margin-bottom: 5px;">🍅 ポモドーロタイマー</h3>
+    <p style="font-size:0.85em; color:#555; margin-top:0;">25分勉強 + 5分休憩<br>完了で<b>30分の記録</b>と経験値GET！連続でボーナスUP！</p>
+    <button class="action-btn" style="background:#D63031; width:80%; font-size:1.1em;" onclick="startPomodoro()">タイマーを起動する</button>
+</div>
+
+<div class="card" style="border-left: 6px solid var(--study);">
+    <h3 style="color:var(--study);">⏱ 勉強時間を直接記録</h3>
+    <div class="input-wrap">
+        <input type="number" id="in-hour" placeholder="時間" min="0" style="max-width: 80px;"> <span style="font-weight:bold; color:var(--sub);">時間</span>
+        <input type="number" id="in-min" placeholder="分" min="0" max="59" style="max-width: 80px;"> <span style="font-weight:bold; color:var(--sub);">分</span>
+        <button class="action-btn" style="background:var(--study); flex:1;" onclick="recordStudy()">記録</button>
+    </div>
+</div>
+
+<div class="card" style="border-left: 6px solid var(--task);">
+    <h3 style="color:var(--task);">✅ 具体的なタスクを記録</h3>
+    <div class="input-wrap">
+        <select id="task-select">
+            <option value="30">仕訳 10題 (獲得: 30XP)</option>
+            <option value="100">仕訳 30題 (獲得: 100XP)</option>
+            <option value="150">問題集 1章分 (獲得: 150XP)</option>
+            <option value="300">過去問 1回分 (獲得: 300XP)</option>
+            <option value="500">模試 1回分 (獲得: 500XP)</option>
+        </select>
+        <button class="action-btn" style="background:var(--task);" onclick="recordTask()">完了！</button>
     </div>
 </div>
 
 <div class="card">
-    <h3 style="font-size:1.1em; color:var(--sub-text); margin-top:0; margin-bottom: 15px;">🎯 今週の目標 / 🏆 デイリーミッション</h3>
-    <div id="daily-mission-display" style="margin-bottom: 20px; border-bottom: 1px dashed #E1E8ED; padding-bottom: 15px;"></div>
-    <div id="weekly-goal-display"></div>
-</div>
-
-<div class="card" id="pomo-card" style="border: 2px solid var(--tomato); transition: all 0.3s;">
-    <h3 style="font-size:1.1em; color:var(--tomato); margin-top:0;">🍅 ポモドーロタイマー</h3>
-    <div id="pomo-combo" class="combo-text" style="display:none;">連続コンボ: x1.0 XP</div>
-    <div id="pomodoro-display" style="font-size: 3.5em; font-weight: bold; margin: 15px 0;">25:00</div>
-    <div id="pomodoro-status" style="font-size: 1em; color: var(--sub-text); font-weight:bold; margin-bottom: 20px;">📖 学習モード</div>
-    <div style="display:flex; gap:15px; justify-content:center;">
-        <button class="btn-main" id="btn-pomo-start" style="background:var(--tomato); flex:2;" onclick="togglePomodoro()">スタート</button>
-        <button onclick="resetPomodoro()" style="flex:1;">リセット</button>
-        <button onclick="toggleFullscreen()" style="flex:1;">全画面</button>
-    </div>
-</div>
-
-<div class="btn-grid">
-    <button class="btn-gacha" onclick="openGacha()">🎰 ガチャを引く (100🪙)</button>
-    <button onclick="openInventory()">🎒 もちもの・着せ替え</button>
-</div>
-
-<div class="card">
-    <h3 style="font-size:1.1em; color:var(--sub-text); text-align:left; margin-top:0; margin-bottom:15px;">📝 記録をつける</h3>
-    
-    <div class="input-box-wrap">
-        <div class="input-label">⏱️ 勉強時間で記録 (1分 = 1XP)</div>
-        <div style="display:flex; gap:15px;">
-            <div class="input-group" style="margin-bottom:0;">
-                <input type="number" id="input-hours" placeholder="時間" min="0">
-                <input type="number" id="input-minutes" placeholder="分" min="0" max="59">
-            </div>
-            <button class="btn-main" onclick="gainTime()">記録</button>
+    <div class="flex-between" style="margin-bottom: 10px;">
+        <h3>📊 成長グラフ</h3>
+        <div class="tab-group" style="margin:0;">
+            <button class="tab-btn active" onclick="setGraphPeriod(7, this)">7日間</button>
+            <button class="tab-btn" onclick="setGraphPeriod(30, this)">30日間</button>
+            <button class="tab-btn" onclick="setGraphPeriod(999, this)">累計</button>
         </div>
     </div>
 
-    <div class="input-box-wrap">
-        <div class="input-label">📋 タスク数で記録 (1タスク = 10XP)</div>
-        <div style="display:flex; gap:15px;">
-            <div class="input-group" style="margin-bottom:0;">
-                <input type="number" id="input-task-val" placeholder="こなしたタスク回数" min="1" style="width:100%; border-right:none;">
-            </div>
-            <button class="btn-main" onclick="gainTask()" style="background:var(--green);">記録</button>
-        </div>
+    <h4 style="color:var(--study); margin: 0 0 5px 0; font-size: 0.9em;">📖 勉強時間</h4>
+    <div class="graph-wrapper">
+        <div id="graph-s" class="graph-container"></div>
+    </div>
+
+    <h4 style="color:var(--task); margin: 0 0 5px 0; font-size: 0.9em;">📋 タスク実行回数</h4>
+    <div class="graph-wrapper" style="height:120px; margin-left: 20px;">
+        <div id="graph-t" class="graph-container"></div>
     </div>
 </div>
 
 <div class="card">
-    <h3 style="font-size:1.1em; color:var(--sub-text); margin-top:0; margin-bottom: 15px;">📊 勉強の記録</h3>
-    <div>
-        <button id="tab7" class="tab-btn active" onclick="switchGraph(7)">直近7日</button>
-        <button id="tab30" class="tab-btn" onclick="switchGraph(30)">直近30日</button>
+    <h3>🤝 フレンド</h3>
+    <p style="font-size: 0.85em; color: var(--sub); margin-top:0;">友達のIDを登録してライバルを作ろう！</p>
+    <div class="input-wrap">
+        <input type="text" id="friend-id-in" placeholder="フレンドのIDを入力" style="text-transform: uppercase;">
+        <button class="action-btn" style="background:#3498DB;" onclick="addFriend()">登録</button>
     </div>
-    <div id="graph-container" class="graph-area"></div>
-    <div style="margin-top:25px; font-size:1.1em; color:var(--sub-text); font-weight:bold; display:flex; justify-content:space-between; align-items:center;">
-        <button class="slot-btn" onclick="openAchievements()">🏆 実績を見る</button>
-        <div>累計: <span id="sum-all" style="color:var(--main); font-size:1.3em;">0時間0分</span></div>
+    <div class="friend-list" id="friend-list"></div>
+</div>
+
+<div class="card card-center">
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+        <button class="action-btn" style="background:linear-gradient(45deg, #F1C40F, #F39C12);" onclick="openGacha()">🎰 ガチャ(100🪙)</button>
+        <button class="action-btn" style="background:#95A5A6;" onclick="openModalInv()">🎒 持ち物</button>
+        <button class="action-btn" style="background:#9B59B6;" onclick="openModalAch()">🏆 実績一覧</button>
+        <button class="action-btn" style="background:#34495E;" onclick="resetData()">データ初期化</button>
     </div>
 </div>
 
-<div id="slot-modal" class="overlay"><div class="modal-card"><h2 style="color:var(--main);">データ選択</h2><div id="slot-list"></div></div></div>
-<div id="name-modal" class="overlay"><div class="modal-card"><h2 style="color:var(--main);">新規登録</h2><input type="text" id="user-name-input" placeholder="名前" style="width:100%; padding:15px; margin-bottom:20px; border-radius:12px; border:1px solid #ccc; font-size:1em;"><button class="btn-main" onclick="registerName()" style="width:100%;">始める</button></div></div>
-<div id="lv-modal" class="overlay">
-    <div class="modal-card lv-up-anim">
-        <div class="sparkle" style="top:10%; left:10%;">✨</div><div class="sparkle" style="top:20%; right:10%;">🎉</div>
-        <h1 style="color:var(--accent); font-size:2.5em; margin:0;">LEVEL UP!</h1>
-        <div id="modal-job" style="font-size:90px; margin: 15px 0;"></div>
-        <div id="modal-job-name" style="font-size:1.8em; font-weight:bold;"></div>
-        <div style="color:var(--gold); font-size:1.3em; font-weight:bold; margin: 20px 0;">🪙 100コイン獲得！</div>
-        <button class="btn-main" onclick="closeModal('lv-modal')" style="width:100%;">次へ</button>
+<div id="pomo-screen">
+    <h2 id="pomo-status">勉強タイム (25分)</h2>
+    <h1 id="pomo-time">25:00</h1>
+    <div id="pomo-combo-disp">現在のコンボ: 0</div>
+    <button class="pomo-cancel" onclick="cancelPomodoro()">中断して戻る</button>
+</div>
+
+<div id="modal-inv" class="overlay">
+    <div class="modal">
+        <h3>🎒 持ち物・着せ替え</h3>
+        <div class="tab-group" id="inv-tabs">
+            <button class="tab-btn active" onclick="showInv('icon', this)">キャラ</button>
+            <button class="tab-btn" onclick="showInv('bg', this)">背景</button>
+            <button class="tab-btn" onclick="showInv('title', this)">称号</button>
+        </div>
+        <div id="inv-list" style="min-height: 150px; margin-bottom:15px;"></div>
+        <button class="action-btn" style="background:#7F8C8D; width:100%;" onclick="closeModal('modal-inv')">閉じる</button>
     </div>
 </div>
-<div id="info-modal" class="overlay"><div class="modal-card"><h2 id="info-title" style="color:var(--main); margin-top:0;"></h2><p id="info-desc" style="font-weight:bold; font-size:1.1em; line-height:1.5;"></p><button class="btn-main" onclick="closeModal('info-modal')" style="width:100%; margin-top:20px;">閉じる</button></div></div>
-<div id="inventory-modal" class="overlay"><div class="modal-card" style="max-height:85vh; overflow-y:auto; padding: 20px;"><h2 style="color:var(--main); margin-top:0;">もちもの</h2><div id="inventory-list" style="text-align:left;"></div><button class="btn-main" onclick="closeModal('inventory-modal')" style="width:100%; margin-top:20px;">閉じる</button></div></div>
+
+<div id="modal-ach" class="overlay">
+    <div class="modal">
+        <h3>🏆 実績一覧</h3>
+        <div id="ach-list" style="max-height: 60vh; overflow-y: auto;"></div>
+        <button class="action-btn" style="background:#7F8C8D; width:100%; margin-top:15px;" onclick="closeModal('modal-ach')">閉じる</button>
+    </div>
+</div>
+
+<div id="modal-start" class="overlay" style="background:var(--bg);">
+    <div class="modal card-center">
+        <h2 style="color:var(--study);">簿記クエへようこそ！</h2>
+        <input type="text" id="name-in" placeholder="ニックネーム" style="width:80%; padding:10px; margin-bottom:15px;">
+        <button class="action-btn" style="background:var(--study); width:80%;" onclick="initUser()">冒険を始める</button>
+    </div>
+</div>
 
 <script>
-    const JOBS = [
-        { lv: 1, n: "簿記の赤ちゃん", i: "👶" }, { lv: 5, n: "簿記の初心者", i: "🧒" },
-        { lv: 10, n: "簿記学徒", i: "🧑‍🎓" }, { lv: 20, n: "見習い経理", i: "🧑‍💻" },
-        { lv: 35, n: "敏腕経理マン", i: "👔" }, { lv: 50, n: "決算の勇者", i: "⚔️" },
-        { lv: 70, n: "経理の賢者", i: "🧙" }, { lv: 100,n: "伝説の会計王", i: "👑" }
-    ];
+// 基本データ
+const JOBS = [
+    { lv: 1, n: "見習い", i: "👶" }, { lv: 5, n: "初級担当", i: "🧒" },
+    { lv: 15, n: "一人前経理", i: "🧑‍💻" }, { lv: 30, n: "ベテラン", i: "🕵️" },
+    { lv: 50, n: "財務長官", i: "🧙" }, { lv: 100, n: "伝説の会計神", i: "👑" }
+];
 
-    const GACHA_POOL = [
-        { id: "bg_dark", type: "bg", name: "背景: ダークナイト", val: "#1A202C", rarity: "R" },
-        { id: "bg_sakura", type: "bg", name: "背景: サクラ", val: "#FFF0F5", rarity: "SR" },
-        { id: "bg_gold", type: "bg", name: "背景: ゴールド", val: "#FFF8E1", rarity: "SR" },
-        { id: "t_hardworker", type: "title", name: "称号: 努力の天才", val: "努力の天才", rarity: "R" },
-        { id: "t_sleepless", type: "title", name: "称号: 不眠不休", val: "不眠不休", rarity: "SR" },
-        { id: "t_god", type: "title", name: "称号: 会計神", val: "会計神", rarity: "SSR" },
-        { id: "i_dog", type: "icon", name: "キャラ: イヌ", val: "🐶", rarity: "R" },
-        { id: "i_cat", type: "icon", name: "キャラ: ネコ", val: "🐱", rarity: "R" },
-        { id: "i_robot", type: "icon", name: "キャラ: ロボ", val: "🤖", rarity: "SR" },
-        { id: "i_dragon", type: "icon", name: "キャラ: ドラゴン", val: "🐉", rarity: "SSR" }
-    ];
+const POOL = [
+    { id: 'i1', t: 'icon', n: '柴犬', v: '🐕', r: 'R' }, { id: 'i2', t: 'icon', n: '黒猫', v: '🐈‍⬛', r: 'R' },
+    { id: 'i3', t: 'icon', n: 'フクロウ', v: '🦉', r: 'SR' }, { id: 'i4', t: 'icon', n: 'ドラゴン', v: '🐉', r: 'SSR' },
+    { id: 'b1', t: 'bg', n: 'ミント', v: '#E8F8F5', r: 'R' }, { id: 'b2', t: 'bg', n: 'サンセット', v: '#FDEDEC', r: 'SR' },
+    { id: 'b3', t: 'bg', n: '星空', v: '#1A252F', r: 'SSR' },
+    { id: 't1', t: 'title', n: '努力の天才', v: '努力の天才', r: 'R' }, { id: 't2', t: 'title', n: '止まらない男', v: '止まらない男', r: 'SR' },
+    { id: 't3', t: 'title', n: '神に選ばれし者', v: '神に選ばれし者', r: 'SSR' }
+];
 
-    // 実績を大量追加
-    const ACHIEVEMENTS = [
-        { id: "a1", name: "第一歩", desc: "初めて学習を記録する", condition: (u) => u.xp > 0 },
-        { id: "a2", name: "努力家", desc: "累計学習時間が10時間(600XP)突破", condition: (u) => u.xp >= 600 },
-        { id: "a3", name: "継続の鬼", desc: "7日連続学習", condition: (u) => u.streak >= 7 },
-        { id: "a4", name: "ポモドーロ職人", desc: "ポモドーロを累計10回完了", condition: (u) => u.stats.pomo >= 10 },
-        { id: "a5", name: "タスク処理班", desc: "タスクを累計50回こなす", condition: (u) => u.stats.tasks >= 50 },
-        { id: "a6", name: "運試し", desc: "ガチャを累計5回引く", condition: (u) => u.stats.gacha >= 5 },
-        { id: "a7", name: "月間皆勤賞", desc: "30日連続学習", condition: (u) => u.streak >= 30 },
-        { id: "a8", name: "百戦錬磨", desc: "累計学習時間が100時間(6000XP)突破", condition: (u) => u.xp >= 6000 },
-        { id: "a9", name: "神への道", desc: "レベル50に到達する", condition: (u) => getLevelInfo(u.xp).lv >= 50 }
-    ];
+const DAILY_TARGETS = [
+    { id: 'd_study', desc: "勉強を30分記録する", max: 30, rw: 30 },
+    { id: 'd_task', desc: "タスクを2回実行する", max: 2, rw: 30 },
+    { id: 'd_pomo', desc: "ポモドーロを1回完了する", max: 1, rw: 50 }
+];
 
-    let appState = JSON.parse(localStorage.getItem('boki_v9_wide')) || {
-        slots: [{ id: 0 }, { id: 1 }, { id: 2 }], currentSlot: -1
+// 状態変数
+let u = JSON.parse(localStorage.getItem('boki_v5')) || JSON.parse(localStorage.getItem('boki_v4')) || null;
+let viewDays = 7;
+let pomoTimer = null;
+let pomoTimeLeft = 0;
+let isPomoBreak = false;
+
+// ユーティリティ
+function formatTime(mins) {
+    if (mins === 0) return "0分";
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    if (h > 0 && m > 0) return `${h}時間${m}分`;
+    if (h > 0) return `${h}時間`;
+    return `${m}分`;
+}
+
+function getLv(xp) {
+    let lv = 1, next = 50;
+    while(xp >= next) { xp -= next; lv++; next = Math.floor(next * 1.3); }
+    return { lv, cur: xp, next };
+}
+
+function getToday() { return new Date().toISOString().split('T')[0]; }
+function save() { localStorage.setItem('boki_v5', JSON.stringify(u)); }
+function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+// データ修復・統合機能（バグ防止の要）
+function fixDataIntegrity() {
+    if (!u) return;
+    if (!u.logs) u.logs = {};
+    if (!u.daily) u.daily = { date: getToday(), p: {}, c: [] };
+    if (!u.daily.p) u.daily.p = {};
+    if (!Array.isArray(u.daily.c)) u.daily.c = [];
+    if (!Array.isArray(u.ach)) u.ach = [];
+    if (!Array.isArray(u.friends)) u.friends = [];
+    if (!Array.isArray(u.inv)) u.inv = [];
+    if (!u.eq) u.eq = { icon:"", bg:"", title:"" };
+    if (typeof u.xp !== 'number' || isNaN(u.xp)) u.xp = 0;
+    if (typeof u.coins !== 'number' || isNaN(u.coins)) u.coins = 0;
+    if (typeof u.pomoCombo !== 'number' || isNaN(u.pomoCombo)) u.pomoCombo = 0;
+    
+    const correctLv = getLv(u.xp).lv;
+    if (!u.lastLv || typeof u.lastLv !== 'number' || isNaN(u.lastLv)) u.lastLv = correctLv;
+}
+
+// 統合更新処理
+function updateState() {
+    fixDataIntegrity();
+    checkLevelUp();
+    checkAchievements();
+    save();
+    render();
+}
+
+// 初期化処理
+function initUser() {
+    const n = document.getElementById('name-in').value;
+    if(!n) return;
+    u = {
+        name: n, id: Math.random().toString(36).substr(2, 6).toUpperCase(),
+        xp: 0, lastLv: 1, coins: 100, eq: { icon:"", bg:"", title:"" }, inv: [],
+        logs: {}, daily: { date: "", p: {}, c: [] }, pomoCombo: 0, ach: [], friends: []
     };
+    updateState(); 
+    closeModal('modal-start');
+}
 
-    let currentUser = null;
-    let currentTab = 7; // グラフ用
-    let pomoInterval = null;
-    let pomoTime = 25 * 60; 
-    let pomoMode = 'study'; 
-    let isPomoRunning = false;
-    let isFullscreen = false;
-    let pomoCombo = 0; 
-
-    /* ==== ユーティリティ ==== */
-    function getLevelInfo(xp) {
-        let lv = 1, needed = 10, tempXP = xp;
-        while (tempXP >= needed) { tempXP -= needed; lv++; needed = 10 + Math.floor(Math.pow(lv, 1.5) * 5); }
-        return { lv, currentXP: tempXP, nextXP: needed, totalLvXP: xp - tempXP };
+// 完全リセット
+function resetData() {
+    if(confirm("本当にデータを初期化しますか？\n（この操作は取り消せません！）")) {
+        localStorage.removeItem('boki_v4');
+        localStorage.removeItem('boki_v5');
+        location.reload();
     }
-    function getJob(lv) { return JOBS.slice().reverse().find(j => lv >= j.lv) || JOBS[0]; }
-    function getTodayString() { const d = new Date(); return `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()}`; }
-    function formatTime(m) { let h = Math.floor(m / 60); return h > 0 ? `${h}時間${m%60}分` : `${m}分`; }
-    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-    function showInfo(title, desc) { document.getElementById('info-title').innerText=title; document.getElementById('info-desc').innerHTML=desc; document.getElementById('info-modal').style.display='flex'; }
+}
 
-    /* ==== 初期化とデータ移行 ==== */
-    function initUserTemplate(user) {
-        if(!user.xp) user.xp = 0;
-        if(!user.coins) user.coins = 0;
-        if(!user.streak) user.streak = 0;
-        if(!user.lastDate) user.lastDate = "";
-        if(!user.logs) user.logs = {};
-        if(!user.inventory) user.inventory = [];
-        if(!user.equipped) user.equipped = { bg: "", title: "", icon: "" };
-        if(!user.achievements) user.achievements = [];
-        if(!user.weeklyGoal) user.weeklyGoal = { type: 'study', val: 0, progress: 0 };
-        if(!user.dailyMission) user.dailyMission = { date: "", target: 30, progress: 0, cleared: false };
-        if(!user.stats) user.stats = { pomo: 0, gacha: 0, tasks: 0 }; // 実績用統計データ追加
+// フレンドシステム
+function addFriend() {
+    const fid = document.getElementById('friend-id-in').value.trim().toUpperCase();
+    if(!fid) return;
+    if(fid === u.id) return alert("自分のIDは追加できません");
+    if(u.friends.includes(fid)) return alert("すでにフレンドに登録されています");
+    
+    u.friends.push(fid);
+    updateState();
+    document.getElementById('friend-id-in').value = "";
+    alert(`ID: ${fid} をフレンドに登録しました！`);
+}
+
+function renderFriends() {
+    const list = document.getElementById('friend-list');
+    list.innerHTML = "";
+    if(!u.friends || u.friends.length === 0) {
+        list.innerHTML = "<div style='color:var(--sub); font-size:0.9em;'>まだフレンドがいません。IDを入力して追加しましょう。</div>";
+        return;
     }
+    u.friends.forEach(f => {
+        list.innerHTML += `<div class="friend-item">
+            <span>👤 ID: <b>${f}</b></span>
+            <span style="color:var(--sub); font-size:0.8em;">ライバル</span>
+        </div>`;
+    });
+}
 
-    function openSlotMenu() {
-        const list = document.getElementById('slot-list'); list.innerHTML = '';
-        appState.slots.forEach((slot, idx) => {
-            const div = document.createElement('div'); div.className = 'list-item';
-            div.style.cursor = 'pointer';
-            if (slot.name) {
-                initUserTemplate(slot);
-                const info = getLevelInfo(slot.xp);
-                div.innerHTML = `<div>DATA ${idx+1}: <b>${slot.name}</b><br><small style="color:var(--sub-text)">Lv.${info.lv} / 🔥 ${slot.streak}日</small></div>`;
-            } else { div.innerHTML = `DATA ${idx+1}: 空きスロット`; }
-            div.onclick = () => selectSlot(idx);
-            list.appendChild(div);
-        });
-        document.getElementById('slot-modal').style.display = 'flex';
+// デイリークエスト
+function checkDailyReset() {
+    const today = getToday();
+    if(u.daily.date !== today) {
+        u.daily = { date: today, p: { d_study:0, d_task:0, d_pomo:0 }, c: [] };
+        u.pomoCombo = 0;
     }
+}
 
-    function selectSlot(idx) {
-        appState.currentSlot = idx; currentUser = appState.slots[idx];
-        closeModal('slot-modal');
-        if (!currentUser.name) { document.getElementById('name-modal').style.display = 'flex'; } 
-        else { initUserTemplate(currentUser); checkDailyLogin(); refreshUI(); }
+function progressDaily(id, val) {
+    checkDailyReset();
+    u.daily.p[id] = (u.daily.p[id] || 0) + val;
+}
+
+function claimDaily(id) {
+    const t = DAILY_TARGETS.find(d => d.id === id);
+    if(u.daily.p[id] >= t.max && !u.daily.c.includes(id)) {
+        u.daily.c.push(id);
+        u.xp += t.rw; u.coins += 20;
+        alert(`デイリークリア！ ${t.rw}XP と 20🪙 獲得！`);
+        updateState();
     }
+}
 
-    function registerName() {
-        const name = document.getElementById('user-name-input').value;
-        if (name) { currentUser.name = name; initUserTemplate(currentUser); checkDailyLogin(); closeModal('name-modal'); saveData(); refreshUI(); }
+// レベルアップ判定
+function checkLevelUp() {
+    const newLvInfo = getLv(u.xp);
+    if(newLvInfo.lv > u.lastLv) {
+        const diff = newLvInfo.lv - u.lastLv;
+        const rewardCoins = diff * 50;
+        u.coins += rewardCoins;
+        u.lastLv = newLvInfo.lv;
+        alert(`🎉 ${diff}レベルアップ！ (Lv.${newLvInfo.lv})\nボーナスとして ${rewardCoins}🪙 獲得しました！`);
     }
+}
 
-    function checkDailyLogin() {
-        const today = getTodayString();
-        if (currentUser.lastDate !== today) {
-            if (currentUser.lastDate) {
-                const gap = (new Date(today) - new Date(currentUser.lastDate)) / 86400000;
-                if (gap > 1) {
-                    currentUser.streak = 0;
-                    const currentLvInfo = getLevelInfo(currentUser.xp);
-                    if (currentLvInfo.lv > 1) {
-                        currentUser.xp = currentLvInfo.totalLvXP; 
-                        setTimeout(() => showInfo("💔 レベルダウン...", "サボってしまったため、経験値が少し減ってしまいました。\n今日からまた頑張りましょう！"), 500);
-                    }
-                } else if (gap === 1) { currentUser.streak++; }
-            } else { currentUser.streak = 1; }
-            
-            currentUser.coins += 10;
-            currentUser.lastDate = today;
-            pomoCombo = 0;
-            setTimeout(() => alert("🎁 ログインボーナス！ 10コイン獲得！"), 100);
+// 実績（トロフィー）システム
+function getTotalStudy() { return Object.values(u.logs).reduce((s, l) => s + (l.s || 0), 0); }
+function getTotalTask() { return Object.values(u.logs).reduce((s, l) => s + (l.t || 0), 0); }
 
-            currentUser.dailyMission = { date: today, target: Math.floor(Math.random()*30)+20, progress: 0, cleared: false };
+const ACHIEVEMENTS = [
+    { id: 'a1', n: '最初の一歩', desc: '初めて勉強を記録する', cond: () => Object.keys(u.logs).length > 0 },
+    { id: 'a2', n: '見習い卒業', desc: 'レベル5に到達する', cond: () => getLv(u.xp).lv >= 5 },
+    { id: 'a3', n: '努力の結晶', desc: '累計勉強時間が10時間を超える', cond: () => getTotalStudy() >= 600 },
+    { id: 'a4', n: 'タスクマスター', desc: 'タスクを累計10回完了する', cond: () => getTotalTask() >= 10 },
+    { id: 'a5', n: 'ポモドーロ職人', desc: 'ポモドーロで3コンボ達成する', cond: () => u.pomoCombo >= 3 }
+];
+
+function checkAchievements() {
+    let unlocked = false;
+    ACHIEVEMENTS.forEach(a => {
+        if(!u.ach.includes(a.id) && a.cond()) {
+            u.ach.push(a.id);
+            u.coins += 100; // 実績解除ボーナス
+            unlocked = true;
+            alert(`🏆 実績解除！\n「${a.n}」\nボーナスとして 100🪙 獲得！`);
         }
-        saveData();
-    }
+    });
+}
 
-    /* ==== コア機能（経験値・実績） ==== */
-    function gainXP(amount, type) {
-        let multiplier = 1 + (pomoCombo * 0.1); 
-        let finalAmount = Math.floor(amount * multiplier);
+function openModalAch() {
+    const list = document.getElementById('ach-list');
+    list.innerHTML = "";
+    ACHIEVEMENTS.forEach(a => {
+        const isUnlock = u.ach.includes(a.id);
+        list.innerHTML += `<div style="padding: 10px; border-bottom: 1px solid #eee; opacity: ${isUnlock ? 1 : 0.5}">
+            <div style="font-weight:bold;">${isUnlock ? '🌟 ' + a.n : '🔒 ？？？'}</div>
+            <div style="font-size:0.8em; color:gray;">${isUnlock ? a.desc : '未解除'}</div>
+        </div>`;
+    });
+    openModal('modal-ach');
+}
 
-        const oldLv = getLevelInfo(currentUser.xp).lv;
-        currentUser.xp += finalAmount;
-        currentUser.logs[getTodayString()] = (currentUser.logs[getTodayString()] || 0) + finalAmount;
 
-        if (currentUser.weeklyGoal && currentUser.weeklyGoal.type === type) { currentUser.weeklyGoal.progress += amount; }
-        if (currentUser.dailyMission && !currentUser.dailyMission.cleared) {
-            currentUser.dailyMission.progress += amount;
-            if (currentUser.dailyMission.progress >= currentUser.dailyMission.target) {
-                currentUser.dailyMission.cleared = true;
-                currentUser.coins += 20;
-                setTimeout(() => showInfo("🏆 デイリークリア！", "20コイン獲得しました！"), 300);
-            }
+// 記録処理
+function recordStudy() {
+    const h = parseInt(document.getElementById('in-hour').value) || 0;
+    const m = parseInt(document.getElementById('in-min').value) || 0;
+    const v = (h * 60) + m;
+    
+    if (!v || v <= 0) return alert("勉強時間を入力してください");
+
+    const t = getToday();
+    if (!u.logs[t]) u.logs[t] = { s: 0, t: 0 };
+    
+    u.logs[t].s += v; 
+    u.xp += v; 
+    progressDaily('d_study', v);
+    
+    document.getElementById('in-hour').value = "";
+    document.getElementById('in-min').value = "";
+    
+    updateState();
+    alert(`${formatTime(v)} の勉強を記録しました！`);
+}
+
+function recordTask() {
+    const sel = document.getElementById('task-select');
+    const xpGain = parseInt(sel.value);
+    const taskName = sel.options[sel.selectedIndex].text;
+
+    const t = getToday();
+    if (!u.logs[t]) u.logs[t] = { s: 0, t: 0 };
+    
+    u.logs[t].t += 1;
+    u.xp += xpGain;
+    progressDaily('d_task', 1);
+    
+    updateState();
+    alert(`「${taskName}」を完了！\n${xpGain}XP 獲得しました！`);
+}
+
+// ポモドーロタイマー
+const POMO_WORK = 25 * 60; 
+const POMO_BREAK = 5 * 60;
+
+function startPomodoro() {
+    checkDailyReset();
+    document.getElementById('pomo-screen').style.display = 'flex';
+    document.getElementById('pomo-combo-disp').innerText = `現在のコンボ: ${u.pomoCombo}`;
+    document.getElementById('pomo-screen').style.background = 'linear-gradient(135deg, #FF416C, #FF4B2B)';
+    isPomoBreak = false;
+    pomoTimeLeft = POMO_WORK;
+    updatePomoUI();
+    
+    pomoTimer = setInterval(() => {
+        pomoTimeLeft--;
+        updatePomoUI();
+        if(pomoTimeLeft <= 0) {
+            clearInterval(pomoTimer);
+            if(!isPomoBreak) startPomoBreak();
+            else finishPomoSequence();
         }
+    }, 1000); // ※テスト時は 10 に変更すると高速で終わります
+}
 
-        checkAchievements();
-        saveData();
-        
-        let msg = `${finalAmount} XP獲得！`;
-        if (multiplier > 1) msg = `🔥 コンボボーナス(x${multiplier.toFixed(1)})\n` + msg;
-        alert(msg);
-
-        const newLv = getLevelInfo(currentUser.xp).lv;
-        if (newLv > oldLv) {
-            currentUser.coins += 100; saveData();
-            document.getElementById('modal-job').innerText = getJob(newLv).i;
-            document.getElementById('modal-job-name').innerText = getJob(newLv).n;
-            document.getElementById('lv-modal').style.display = 'flex';
+function startPomoBreak() {
+    isPomoBreak = true;
+    pomoTimeLeft = POMO_BREAK;
+    document.getElementById('pomo-status').innerText = "休憩タイム (5分)";
+    document.getElementById('pomo-screen').style.background = 'linear-gradient(135deg, #00C9FF, #92FE9D)';
+    alert("25分の勉強お疲れ様！5分の休憩に入ります。");
+    
+    pomoTimer = setInterval(() => {
+        pomoTimeLeft--;
+        updatePomoUI();
+        if(pomoTimeLeft <= 0) {
+            clearInterval(pomoTimer);
+            finishPomoSequence();
         }
-        refreshUI();
-    }
+    }, 1000);
+}
 
-    // 分かりやすくなった入力機能
-    function gainTime() {
-        const h = parseInt(document.getElementById('input-hours').value) || 0;
-        const m = parseInt(document.getElementById('input-minutes').value) || 0;
-        const val = (h * 60) + m;
-        if (val > 0) { 
-            gainXP(val, 'study'); 
-            document.getElementById('input-hours').value = '';
-            document.getElementById('input-minutes').value = '';
-        }
-    }
+function finishPomoSequence() {
+    document.getElementById('pomo-screen').style.display = 'none';
+    u.pomoCombo++;
+    
+    const comboBonus = u.pomoCombo * 10; 
+    const totalXP = 30 + comboBonus;
+    
+    alert(`🍅 ポモドーロ完了！\n30分の勉強時間と、ボーナス含め ${totalXP}XP を獲得！\n現在のコンボ: ${u.pomoCombo}`);
+    
+    const t = getToday();
+    if (!u.logs[t]) u.logs[t] = { s: 0, t: 0 };
+    
+    u.logs[t].s += 30; // 勉強時間に30分追加
+    u.xp += totalXP;   // 経験値追加
+    
+    progressDaily('d_pomo', 1);
+    progressDaily('d_study', 30); // デイリーの勉強時間にも反映
+    
+    updateState();
+}
 
-    function gainTask() {
-        const tasks = parseInt(document.getElementById('input-task-val').value) || 0;
-        if (tasks > 0) { 
-            currentUser.stats.tasks += tasks; // 統計加算
-            gainXP(tasks * 10, 'task'); // 1タスク = 10XP
-            document.getElementById('input-task-val').value = '';
-        }
-    }
+function cancelPomodoro() {
+    clearInterval(pomoTimer);
+    document.getElementById('pomo-screen').style.display = 'none';
+    alert("タイマーを中断しました。記録はされません。");
+}
 
-    function checkAchievements() {
-        ACHIEVEMENTS.forEach(ach => {
-            if (!currentUser.achievements.includes(ach.id) && ach.condition(currentUser)) {
-                currentUser.achievements.push(ach.id);
-                currentUser.coins += 50;
-                setTimeout(() => showInfo("🏆 実績解除！", `「${ach.name}」を達成！\n報酬: 50コイン`), 800);
-            }
-        });
-    }
+function updatePomoUI() {
+    let m = Math.floor(pomoTimeLeft / 60).toString().padStart(2, '0');
+    let s = (pomoTimeLeft % 60).toString().padStart(2, '0');
+    document.getElementById('pomo-time').innerText = `${m}:${s}`;
+}
 
-    /* ==== ガチャと装備 ==== */
-    function openGacha() {
-        if (currentUser.coins < 100) return alert("コインが足りません (100🪙必要)");
-        currentUser.coins -= 100;
-        currentUser.stats.gacha++; // 統計加算
-        const item = GACHA_POOL[Math.floor(Math.random() * GACHA_POOL.length)];
-        if (!currentUser.inventory.includes(item.id)) {
-            currentUser.inventory.push(item.id);
-            showInfo("🎰 ガチャ結果", `【${item.rarity}】${item.name} をゲットしました！`);
-        } else {
-            currentUser.coins += 30; 
-            showInfo("🎰 ガチャ結果", `【${item.rarity}】${item.name}\n(既に持っているため30🪙に変換されました)`);
-        }
-        checkAchievements(); saveData(); refreshUI();
-    }
+// ガチャとインベントリ
+function openGacha() {
+    if(u.coins < 100) return alert("コインが足りません");
+    u.coins -= 100;
+    
+    const rand = Math.random();
+    let rarity = 'R';
+    if(rand < 0.05) rarity = 'SSR';
+    else if(rand < 0.30) rarity = 'SR';
+    
+    const candidates = POOL.filter(p => p.r === rarity);
+    const item = candidates[Math.floor(Math.random() * candidates.length)];
+    
+    if(!u.inv.includes(item.id)) u.inv.push(item.id);
+    else u.coins += 30;
+    
+    updateState();
+    alert(`🎰 ガチャ結果\nレアリティ: ${item.r}\n「${item.n} (${item.v})」を獲得！\n（ダブりの場合は30コイン還元）`);
+}
 
-    function openInventory() {
-        const list = document.getElementById('inventory-list'); list.innerHTML = '';
-        currentUser.inventory.forEach(id => {
-            const item = GACHA_POOL.find(g => g.id === id);
-            const div = document.createElement('div'); div.className = 'list-item';
-            div.innerHTML = `<div><span style="color:var(--accent); font-weight:bold; font-size:0.8em;">[${item.rarity}]</span> ${item.name}</div> <button class="slot-btn" onclick="equipItem('${item.id}', '${item.type}', '${item.val}')">装備</button>`;
-            list.appendChild(div);
-        });
-        if(currentUser.inventory.length===0) list.innerHTML = "<p>アイテムがありません</p>";
-        document.getElementById('inventory-modal').style.display = 'flex';
-    }
+function openModalInv() {
+    const firstTab = document.querySelector('#inv-tabs .tab-btn');
+    showInv('icon', firstTab);
+    openModal('modal-inv');
+}
 
-    function equipItem(id, type, val) {
-        currentUser.equipped[type] = val; saveData(); refreshUI(); closeModal('inventory-modal');
-        alert("装備しました！");
-    }
+function showInv(type, btn) {
+    document.querySelectorAll('#inv-tabs .tab-btn').forEach(t => t.classList.remove('active'));
+    if(btn) btn.classList.add('active');
 
-    /* ==== ポモドーロ ==== */
-    function toggleFullscreen() {
-        isFullscreen = !isFullscreen;
-        const card = document.getElementById('pomo-card');
-        card.className = isFullscreen ? 'card pomo-fullscreen' : 'card';
-    }
+    const list = document.getElementById('inv-list'); list.innerHTML = "";
+    const items = POOL.filter(p => p.t === type && u.inv.includes(p.id));
+    
+    if(items.length === 0) { list.innerHTML = "<p style='text-align:center; color:gray;'>未所持</p>"; return; }
+    
+    items.forEach(i => {
+        list.innerHTML += `<div style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid #eee;">
+            <span>[${i.r}] ${i.n} <b>${i.v}</b></span>
+            <button class="action-btn" style="padding:5px 15px; background:var(--study);" onclick="equip('${i.t}', '${i.v}')">装備</button>
+        </div>`;
+    });
+}
 
-    function togglePomodoro() {
-        const btn = document.getElementById('btn-pomo-start');
-        if (isPomoRunning) {
-            clearInterval(pomoInterval); isPomoRunning = false; btn.innerText = "再開"; pomoCombo = 0; 
-            document.getElementById('pomo-combo').style.display = 'none';
-        } else {
-            isPomoRunning = true; btn.innerText = "一時停止";
-            document.getElementById('pomo-combo').style.display = 'block';
-            document.getElementById('pomo-combo').innerText = `🔥 連続コンボ: x${(1 + pomoCombo * 0.1).toFixed(1)}`;
-            
-            pomoInterval = setInterval(() => {
-                pomoTime--;
-                if (pomoTime <= 0) {
-                    clearInterval(pomoInterval); isPomoRunning = false;
-                    if (pomoMode === 'study') {
-                        alert("🍅 25分完了！\n30XP記録します！次は休憩です。");
-                        currentUser.stats.pomo++; // 統計加算
-                        gainXP(30, 'study');
-                        pomoCombo++; 
-                        pomoMode = 'break'; pomoTime = 6 * 60; btn.innerText = "休憩スタート";
-                        document.getElementById('pomodoro-status').innerText = "☕ 休憩モード";
-                    } else {
-                        alert("☕ 休憩終了！\n次の学習へ！");
-                        pomoMode = 'study'; pomoTime = 25 * 60; btn.innerText = "学習スタート";
-                        document.getElementById('pomodoro-status').innerText = "📖 学習モード";
-                    }
-                }
-                let m = Math.floor(pomoTime / 60).toString().padStart(2, '0');
-                let s = (pomoTime % 60).toString().padStart(2, '0');
-                document.getElementById('pomodoro-display').innerText = `${m}:${s}`;
-            }, 1000);
-        }
-    }
-    function resetPomodoro() {
-        clearInterval(pomoInterval); isPomoRunning = false; pomoMode = 'study'; pomoTime = 25 * 60; pomoCombo = 0;
-        document.getElementById('pomodoro-display').innerText = "25:00";
-        document.getElementById('btn-pomo-start').innerText = "スタート";
-        document.getElementById('pomo-combo').style.display = 'none';
-    }
+function equip(t, v) { 
+    u.eq[t] = v; 
+    updateState(); 
+    closeModal('modal-inv'); 
+    alert("装備を変更しました！");
+}
 
-    /* ==== 週間目標・グラフ描画 ==== */
-    function setWeeklyGoal() {
-        const val = parseInt(document.getElementById('w-val').value);
-        const type = document.getElementById('w-type').value;
-        if(val > 0) { currentUser.weeklyGoal = { type, val, progress: 0 }; saveData(); refreshUI(); }
-    }
+// グラフ描画
+function setGraphPeriod(days, btn) {
+    viewDays = days;
+    document.querySelectorAll('.tab-group .tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderGraphs();
+}
 
-    function switchGraph(type) {
-        currentTab = type;
-        document.getElementById('tab7').className = type === 7 ? 'tab-btn active' : 'tab-btn';
-        document.getElementById('tab30').className = type === 30 ? 'tab-btn active' : 'tab-btn';
-        renderGraph();
-    }
-
-    function renderGraph() {
-        const container = document.getElementById('graph-container');
-        container.innerHTML = '';
-        let dataEntries = [];
-        
-        for (let i = currentTab - 1; i >= 0; i--) {
+function renderGraphs() {
+    const sCon = document.getElementById('graph-s'); sCon.innerHTML = "";
+    const tCon = document.getElementById('graph-t'); tCon.innerHTML = "";
+    
+    let dates = [];
+    let keys = Object.keys(u.logs).sort();
+    
+    if (viewDays === 999) {
+        dates = keys.slice(-30);
+        if(dates.length === 0) dates = [getToday()];
+    } else {
+        for(let i = viewDays - 1; i >= 0; i--) {
             const d = new Date(); d.setDate(d.getDate() - i);
-            const key = `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()}`;
-            dataEntries.push({ label: `${d.getMonth()+1}/${d.getDate()}`, val: currentUser.logs[key] || 0 });
+            dates.push(d.toISOString().split('T')[0]);
         }
-
-        const maxVal = Math.max(...dataEntries.map(e => e.val), 30); 
-        const barWidth = currentTab === 7 ? '70%' : '80%';
-        const wrapWidth = currentTab === 7 ? '14%' : `${100/30}%`;
-        const isDense = currentTab === 30;
-
-        dataEntries.forEach((entry, i) => {
-            const h = (entry.val / maxVal) * 100;
-            const wrap = document.createElement('div');
-            wrap.className = 'bar-wrap';
-            wrap.style.width = wrapWidth;
-            
-            // 30日表示の時はラベルや値を間引いてスッキリさせる
-            const showLabel = !isDense || (i % 5 === 0) || (i === currentTab - 1);
-            const labelHtml = showLabel ? `<div class="bar-date" style="${isDense?'font-size:9px; margin-top:4px;':''}">${entry.label}</div>` : `<div class="bar-date"></div>`;
-            const valHtml = (!isDense && entry.val > 0) ? `<div class="bar-val">${formatTime(entry.val)}</div>` : ``;
-
-            wrap.innerHTML = `${valHtml}<div class="bar" id="b-${i}" style="width:${barWidth};"></div>${labelHtml}`;
-            container.appendChild(wrap);
-            
-            setTimeout(() => { 
-                const b = document.getElementById(`b-${i}`);
-                if(b) b.style.height = h + "%";
-            }, 50 + (i * 10));
-        });
     }
 
-    function refreshUI() {
-        if (!currentUser) return;
-        const info = getLevelInfo(currentUser.xp);
-        
-        document.body.style.background = currentUser.equipped.bg || 'var(--bg)';
-        document.getElementById('display-title').innerText = currentUser.equipped.title || '称号なし';
-        document.getElementById('display-char').innerText = currentUser.equipped.icon || getJob(info.lv).i;
-        
-        document.getElementById('user-display').innerText = currentUser.name;
-        document.getElementById('display-coins').innerText = currentUser.coins;
-        document.getElementById('display-streak').innerText = currentUser.streak > 0 ? `🔥 ${currentUser.streak}日連続！` : "今日からスタート！";
-        document.getElementById('display-level').innerText = info.lv;
-        document.getElementById('display-rank').innerText = getJob(info.lv).n;
-        document.getElementById('display-next').innerText = info.nextXP - info.currentXP;
-        
-        setTimeout(() => { document.getElementById('display-bar').style.width = (info.currentXP / info.nextXP * 100) + "%"; }, 50);
-        document.getElementById('sum-all').innerText = formatTime(currentUser.xp);
+    const sVals = dates.map(d => u.logs[d] ? u.logs[d].s : 0);
+    const tVals = dates.map(d => u.logs[d] ? u.logs[d].t : 0);
+    
+    // グラフの天井を計算 (最低でも60分を基準に)
+    let maxLogS = Math.max(...sVals, 60); 
+    let maxS = 60;
+    if(maxLogS > 600) maxS = Math.ceil(maxLogS / 60) * 60; 
+    else if(maxLogS > 300) maxS = 600; 
+    else if(maxLogS > 180) maxS = 300; 
+    else if(maxLogS > 60) maxS = 180;  
 
-        // デイリーミッション
-        const dm = currentUser.dailyMission;
-        document.getElementById('daily-mission-display').innerHTML = `
-            <div style="font-size:0.95em; font-weight:bold; margin-bottom:5px;">今日のミッション: ${dm.target}XP 稼ぐ</div>
-            ${dm.cleared ? '<div class="badge">クリア済✨</div>' : `<div style="font-size:0.85em; color:var(--sub-text);">進捗: ${dm.progress}/${dm.target}XP</div>`}
-        `;
+    const maxT = Math.max(...tVals, 5); 
 
-        // 週間目標
-        const wg = currentUser.weeklyGoal;
-        const wgDiv = document.getElementById('weekly-goal-display');
-        if (!wg.val) {
-            wgDiv.innerHTML = `
-                <div style="display:flex; gap:10px; margin-bottom:10px;">
-                    <div class="input-group" style="margin-bottom:0;">
-                        <input type="number" id="w-val" placeholder="目標値">
-                        <select id="w-type" style="border:none; padding:10px; background:transparent; font-weight:bold; color:var(--sub-text);"><option value="study">XP</option><option value="task">回</option></select>
-                    </div>
-                    <button class="btn-main" onclick="setWeeklyGoal()">設定</button>
-                </div>
-            `;
-        } else {
-            const pct = Math.min(100, (wg.progress / wg.val) * 100);
-            wgDiv.innerHTML = `
-                <div style="display:flex; justify-content:space-between; font-size:0.95em; font-weight:bold;">
-                    <span>目標: ${wg.val} ${wg.type==='study'?'XP':'回'}</span><span>${wg.progress} 完了</span>
-                </div>
-                <div class="exp-bar-bg" style="height:14px;"><div class="exp-bar-fill" style="width: ${pct}%;"></div></div>
-                <div style="text-align:right;"><button class="slot-btn" onclick="currentUser.weeklyGoal={val:0}; refreshUI();">再設定</button></div>
-            `;
-        }
-        
-        renderGraph();
-    }
-
-    function openAchievements() {
-        let html = "";
-        ACHIEVEMENTS.forEach(a => {
-            const clr = currentUser.achievements.includes(a.id);
-            html += `<div class="list-item" style="color:${clr?'var(--text)':'var(--sub-text)'}">
-                <div><b style="font-size:1.1em;">${a.name}</b><br><small>${a.desc}</small></div>
-                <div>${clr?'<span class="badge">済</span>':'<span style="font-size:0.8em; font-weight:bold; color:#ccc;">未</span>'}</div>
+    // 勉強時間グラフの基準線
+    const markers = [60, 180, 300, 600];
+    markers.forEach(m => {
+        if (m <= maxS) {
+            const hPercent = (m / maxS) * 100;
+            sCon.innerHTML += `
+            <div style="position: absolute; bottom: ${hPercent}%; left: 0; right: 0; border-bottom: 1px dashed rgba(0,0,0,0.1); z-index: 0;">
+                <span style="position: absolute; left: -35px; top: -8px; font-size: 10px; color: var(--sub); font-weight: bold;">${formatTime(m)}</span>
             </div>`;
-        });
-        showInfo("🏆 実績一覧", html);
-    }
+        }
+    });
 
-    function saveData() { localStorage.setItem('boki_v9_wide', JSON.stringify(appState)); }
+    // タスクグラフの最大値線
+    tCon.innerHTML += `
+        <div style="position: absolute; top: 0; left: 0; right: 0; border-bottom: 1px dashed rgba(0,0,0,0.1); z-index: 0;">
+            <span style="position: absolute; left: -15px; top: -8px; font-size: 10px; color: var(--sub); font-weight: bold;">${maxT}回</span>
+        </div>`;
 
-    window.onload = () => {
-        if (appState.currentSlot >= 0 && appState.slots[appState.currentSlot].name) { selectSlot(appState.currentSlot); } 
-        else { openSlotMenu(); }
-    };
+    // バーの描画
+    dates.forEach((d, i) => {
+        const showLabel = dates.length <= 7 || i % 5 === 0 || i === dates.length - 1;
+        const lbl = showLabel ? d.split('-').slice(1).join('/') : '';
+        
+        // 勉強時間バー
+        const hs = (sVals[i] / maxS) * 100;
+        const timeLabel = sVals[i] > 0 ? formatTime(sVals[i]) : "";
+        sCon.innerHTML += `
+        <div class="bar-wrap">
+            <div style="font-size: 9px; color: var(--study); font-weight: bold; margin-bottom: 3px; writing-mode: vertical-rl; text-orientation: mixed;">${timeLabel}</div>
+            <div class="bar" style="background:var(--study); height:${hs}%"></div>
+            <div class="bar-date">${lbl}</div>
+        </div>`;
+        
+        // タスクバー
+        const ht = (tVals[i] / maxT) * 100;
+        tCon.innerHTML += `
+        <div class="bar-wrap" style="z-index: 1;">
+            <div class="bar" style="background:var(--task); height:${ht}%"></div>
+            <div class="bar-date">${lbl}</div>
+        </div>`;
+    });
+}
+
+function renderDaily() {
+    checkDailyReset();
+    const list = document.getElementById('daily-list'); list.innerHTML = "";
+    DAILY_TARGETS.forEach(t => {
+        const cur = Math.min(u.daily.p[t.id] || 0, t.max);
+        const isClear = cur >= t.max;
+        const isClaimed = u.daily.c.includes(t.id);
+        
+        list.innerHTML += `
+            <div class="daily-item">
+                <div style="flex:1;">
+                    <b>${t.desc}</b><br>
+                    <span style="color:${isClear ? 'var(--task)' : 'var(--sub)'};">${cur} / ${t.max}</span>
+                </div>
+                <div>
+                    <button class="daily-btn" ${!isClear || isClaimed ? 'disabled' : ''} onclick="claimDaily('${t.id}')">
+                        ${isClaimed ? '受取済' : (isClear ? '報酬GET' : '進行中')}
+                    </button>
+                </div>
+            </div>`;
+    });
+}
+
+// 全体描画
+function render() {
+    if(!u) { openModal('modal-start'); return; }
+    fixDataIntegrity(); // 描画前に必ずデータの整合性をチェック
+    
+    const lvInfo = getLv(u.xp);
+    const job = [...JOBS].reverse().find(j => lvInfo.lv >= j.lv) || JOBS[0];
+
+    document.getElementById('display-name').innerText = u.name;
+    document.getElementById('display-id').innerText = `ID: ${u.id}`;
+    document.getElementById('display-coins').innerText = u.coins;
+    document.getElementById('display-level').innerText = lvInfo.lv;
+    document.getElementById('display-rank').innerText = job.n;
+    
+    document.getElementById('display-char').innerText = u.eq.icon || job.i;
+    document.getElementById('display-title').innerText = u.eq.title || "称号なし";
+    document.body.style.background = u.eq.bg || "var(--bg)";
+
+    renderDaily();
+    renderGraphs();
+    renderFriends();
+}
+
+window.onload = render;
 </script>
+
 </body>
 </html>
